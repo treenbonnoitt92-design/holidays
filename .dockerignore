@@ -1,0 +1,17 @@
+# 构建上下文只需要清单、源码和入口脚本
+target
+.git
+.gitignore
+.workbuddy
+
+# 数据库由容器启动时从 JSON 重建，不进镜像
+*.db
+*.db-shm
+*.db-wal
+# 远端构建上下文里会有 db/ 与 .env，同样排除
+db
+.env
+
+# 部署侧文件，镜像内用不到
+docker-compose.yml
+deploy.sh

@@ -1,0 +1,7 @@
+# Rust 构建产物
+/target
+
+# 本地 SQLite 数据库（可由 data/*.json 重新导入生成）
+*.db
+*.db-shm
+*.db-wal

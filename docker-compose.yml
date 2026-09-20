@@ -1,0 +1,27 @@
+# 中国节假日查询服务
+#
+# 这里只引用镜像，不写 build —— 构建交给 deploy.sh（或手工 docker build），
+# 好处是这份文件不依赖源码上下文，回滚时换个 HOLIDAYS_VERSION 就够了。
+services:
+  holidays:
+    image: holidays:${HOLIDAYS_VERSION:-0.1.0}
+    container_name: holidays
+    restart: unless-stopped
+
+    environment:
+      TZ: Asia/Shanghai
+      HOLIDAYS_DB: /data/db/holidays.db
+      # 启动时把源数据导入数据库，JSON 是唯一事实来源
+      HOLIDAYS_DATA_DIR: /data/json
+      HOLIDAYS_AUTO_IMPORT: "1"
+      HOLIDAYS_ADDR: 0.0.0.0:8080
+      RUST_LOG: ${HOLIDAYS_LOG:-info}
+
+    ports:
+      - "${HOLIDAYS_EXTERNAL_PORT:-13480}:8080"
+
+    volumes:
+      # 源数据只读挂载，容器不会改 JSON
+      - ./data:/data/json:ro
+      # 数据库落在宿主机，重建容器不丢数据
+      - ./db:/data/db

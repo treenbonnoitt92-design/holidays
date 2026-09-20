@@ -1,0 +1,4 @@
+# Windows 开发环境下强制这些文件保持 LF,防止 CRLF 破坏 Linux 部署
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
