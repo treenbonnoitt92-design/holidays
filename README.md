@@ -131,6 +131,19 @@ curl http://localhost:13480/health
 
 远程部署用 `deploy.sh`(tar-over-ssh 同步源码到服务器构建,详见脚本头部注释),回滚只需改 `HOLIDAYS_VERSION` 重新 `docker compose up -d`。
 
+部署目标主机不写进仓库,放在本机 `.deploy.local`(已被 `.gitignore` 忽略,也不会同步到远端):
+
+```bash
+# .deploy.local
+REMOTE=user@example.com
+EXTERNAL_PORT=13480
+```
+
+```bash
+./deploy.sh                  # 读取 .deploy.local
+REMOTE=user@host ./deploy.sh # 或临时用环境变量覆盖
+```
+
 ## 开发
 
 ```bash

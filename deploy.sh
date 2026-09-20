@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
 #
-# 同步源码到 hsnut:/data/holidays，在服务器上构建镜像并重启容器。
+# 同步源码到部署目标服务器，在服务器上构建镜像并重启容器。
 #
-#   ./deploy.sh                  构建 + 部署
-#   ./deploy.sh --build-only     只构建镜像，不动线上容器
-#   ./deploy.sh --no-cache       丢弃构建缓存重来一遍
-#   VERSION=0.1.1 ./deploy.sh    指定镜像 tag（默认 0.1.0）
-#   EXTERNAL_PORT=13480 ./deploy.sh
+#   ./deploy.sh                        构建 + 部署
+#   ./deploy.sh --build-only           只构建镜像，不动线上容器
+#   ./deploy.sh --no-cache             丢弃构建缓存重来一遍
+#   REMOTE=user@host ./deploy.sh       指定部署目标（也可写进 .deploy.local）
+#   VERSION=0.1.1 ./deploy.sh          指定镜像 tag（默认 0.1.0）
+#   EXTERNAL_PORT=13480 ./deploy.sh    指定对外端口
+#
+# 私有参数（远程主机等）放本机 .deploy.local，该文件不进版本库，也不会同步到远端。
 #
 # 用 tar over ssh 而不是 rsync：Windows 的 Git Bash 不带 rsync，服务器上却有，
 # 统一走 tar 就只有一个代码路径。上传先落到 .staging/，传完才切换，
 # 中途断线不会把手上的部署搞坏。只动下面列出的子路径，绝不碰远端 db/。
 set -euo pipefail
 
-REMOTE="${REMOTE:-hsnut}"
 REMOTE_DIR="${REMOTE_DIR:-/data/holidays}"
 IMAGE="${IMAGE:-holidays}"
 VERSION="${VERSION:-0.1.0}"
@@ -42,6 +44,20 @@ for arg in "$@"; do
 done
 
 cd "$(dirname "$0")"
+
+# 私有部署参数只留在本机：.deploy.local 已被 .gitignore 忽略，也不会同步到远端。
+#   REMOTE=user@host
+#   EXTERNAL_PORT=13480
+if [ -f .deploy.local ]; then
+    # shellcheck disable=SC1091
+    . ./.deploy.local
+fi
+
+: "${REMOTE:?未指定部署目标：在 .deploy.local 里写 REMOTE=user@host，或 REMOTE=user@host ./deploy.sh}"
+
+# 兼容用记事本写出的 CRLF 配置
+REMOTE="${REMOTE//$'\r'/}"
+EXTERNAL_PORT="${EXTERNAL_PORT//$'\r'/}"
 
 for tool in ssh tar gzip; do
     command -v "$tool" >/dev/null || {

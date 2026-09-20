@@ -5,3 +5,10 @@
 *.db
 *.db-shm
 *.db-wal
+
+# 私有部署参数（远程主机地址、对外端口），每台机器自己写
+.deploy.local
+
+# 本地工具与笔记，不进版本库
+.workbuddy/
+.claude/settings.local.json

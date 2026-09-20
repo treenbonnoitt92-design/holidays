@@ -21,7 +21,8 @@ cargo run -- get 2026-10-01              # CLI 快查某天
 cargo run -- list 2026                   # 列某年全部记录
 cargo run -- info                        # 数据库概况与导入日志
 
-# 部署:同步源码到远程 hsnut,在服务器上构建镜像并重启容器
+# 部署:同步源码到远程主机,在服务器上构建镜像并重启容器
+# 私有部署参数(REMOTE、EXTERNAL_PORT)从环境变量或本机 .deploy.local 读取
 ./deploy.sh
 VERSION=0.1.1 ./deploy.sh                # 指定镜像 tag
 ./deploy.sh --build-only                 # 只构建镜像,不动线上容器
@@ -56,4 +57,5 @@ VERSION=0.1.1 ./deploy.sh                # 指定镜像 tag
 - `data/YYYY.json` 的值格式为 `英文名,中文名,法定天数`:天数取最右逗号分段,中英文名以第一个逗号切分
 - 时区恒为 Asia/Shanghai:运行镜像装 tzdata、SQLite 写入用 `datetime('now','localtime')`、展示用 chrono Local;日期逻辑保持 naive date,不做时区换算
 - Windows 开发 → Linux 部署:`.sh` / `Dockerfile` / `.yml` 必须保持 LF 行尾(镜像里对 entrypoint.sh 有 CRLF 兜底,但不要依赖它)
-- `deploy.sh` 用 tar-over-ssh 同步(Windows Git Bash 无 rsync),远端 `db/` 是持久化数据,同步时绝不触碰
+- `deploy.sh` 用 tar-over-ssh 同步(Windows Git Bash 无 rsync),远端 `db/` 是持久化数据,同步时绝不触碰;部署目标 `REMOTE` 由环境变量或本机 `.deploy.local` 提供,仓库内不得出现具体主机名
+- 私有部署参数(远程主机地址、对外端口)一律走本机 `.deploy.local`,该文件已在 `.gitignore` 中且不会被同步到远端
