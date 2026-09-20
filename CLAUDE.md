@@ -17,6 +17,7 @@ cargo fmt && cargo clippy --all-targets  # 格式化 + lint
 # 本地跑服务
 cargo run -- import                      # 导入 data/*.json → holidays.db(幂等,可反复执行)
 cargo run -- serve                       # http://127.0.0.1:8080
+                                         # 接口文档：/docs（Swagger UI）、/api-docs/openapi.json（OpenAPI 3）
 cargo run -- get 2026-10-01              # CLI 快查某天
 cargo run -- list 2026                   # 列某年全部记录
 cargo run -- info                        # 数据库概况与导入日志
@@ -38,6 +39,7 @@ VERSION=0.1.1 ./deploy.sh                # 指定镜像 tag
 - `src/importer.rs` — 扫描 data 目录导入;单文件一个事务,解析失败整体回滚;单条记录非法只跳过不报错
 - `src/db.rs` — `Store`(单条 SQLite 连接 + Mutex,刻意不用连接池:查询是微秒级)、建表、`upsert`、`query_day` 的日期分类逻辑
 - `src/api.rs` — axum 路由与统一错误信封
+- `src/api/docs.rs` — OpenAPI 文档定义(utoipa),挂到 `/docs` 与 `/api-docs/openapi.json`
 - `src/main.rs` — clap CLI 壳(import/serve/get/list/info/healthcheck 子命令);业务逻辑都在 lib 里,main 只做参数解析与终端展示(含中文对齐表格)
 
 关键语义(需要跨文件才能看清的):
@@ -49,6 +51,9 @@ VERSION=0.1.1 ./deploy.sh                # 指定镜像 tag
 - API 错误响应为 `{"error":{"code":"...","message":"..."}}`,成功响应直接返回数据对象(无 code/data 包装)——遵循本项目现有约定,不要套用其他项目的响应格式
 - CORS 全放开(纯只读查询服务,刻意为之)
 - 容器 HEALTHCHECK 用二进制自带的 `holidays healthcheck` 子命令,镜像里不装 curl
+- 接口文档由 utoipa 从代码生成,**不改动任何接口**:字段说明写在各结构体字段的文档注释上,改动注释即改文档
+  - 新增/删除路由后必须同步 `src/api/docs.rs` 的 `paths` 与 `components(schemas(...))`,否则 `cargo test` 会失败(刻意的漂移防护)
+  - `docs.rs` 里的 `HealthResponse` / `YearsResponse` 是**纯文档结构体**,处理器仍直接拼 JSON 返回,不要为了类型化去改处理器
 
 ## 约定
 

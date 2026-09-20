@@ -37,6 +37,8 @@ holidays healthcheck           # HTTP 探针(容器 HEALTHCHECK 用)
 | GET  | `/api/v1/year/{year}` | 列出某年全部记录(路径写法) |
 | GET  | `/api/v1/years` | 列出有数据的年份 |
 | POST | `/api/v1/holidays/batch` | 批量查询,body `{"dates":["..."]}`,上限 1000 |
+| GET  | `/docs` | Swagger UI 接口文档(可查看字段说明并单独调试) |
+| GET  | `/api-docs/openapi.json` | OpenAPI 3 文档(JSON,可导入 Postman / Apifox / 代码生成器) |
 
 ### 查询单日
 
@@ -88,6 +90,24 @@ curl "http://127.0.0.1:8080/api/v1/holiday?date=2026-10-01"
 curl "http://127.0.0.1:8080/api/v1/holiday?date=2026-02-30"
 # 400 {"error":{"code":"invalid_date","message":"日期 \"2026-02-30\" 不合法:input is out of range"}}
 ```
+
+## 接口文档
+
+服务自带 **OpenAPI 3** 文档,随代码生成,不需要额外部署:
+
+| 入口 | 说明 |
+|------|------|
+| `/docs` | Swagger UI,每个响应字段都有中文说明,可直接 Try it out 单独调试 |
+| `/api-docs/openapi.json` | 原始文档,可导入 Postman / Apifox / 客户端代码生成器 |
+
+```bash
+cargo run -- serve
+# 浏览器打开 http://127.0.0.1:8080/docs
+curl -s http://127.0.0.1:8080/api-docs/openapi.json -o openapi.json
+```
+
+字段说明直接来自 Rust 结构体字段上的文档注释(`src/model.rs`、`src/api.rs`),改注释即改文档。
+新增或改动接口后,要同步 `src/api/docs.rs` 里的 `paths` / `components` —— 漏了测试会失败。
 
 ## 数据格式
 

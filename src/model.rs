@@ -5,6 +5,7 @@ use std::fmt;
 
 use chrono::{NaiveDate, Weekday};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 /// `data/YYYY.json` 的原始结构。
 ///
@@ -63,7 +64,7 @@ impl YearFile {
 }
 
 /// 记录类别，对应数据文件里的三个集合。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Category {
     /// 放假日
@@ -104,34 +105,48 @@ impl Category {
 }
 
 /// 数据库中的一条记录。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
 pub struct Record {
-    /// 规范化后的 `YYYY-MM-DD`
+    /// 规范化后的日期，`YYYY-MM-DD`
+    #[schema(example = "2026-02-17")]
     pub date: String,
+    /// 记录类别：放假 / 调休上班 / 调休补假
     pub category: Category,
+    /// 节日英文名
+    #[schema(example = "Spring Festival")]
     pub name_en: String,
+    /// 节日中文名
+    #[schema(example = "春节")]
     pub name_zh: String,
-    /// 该节日的法定节假日天数
+    /// 该节日的法定节假日天数（不是放假总天数）
+    #[schema(example = 4)]
     pub statutory_days: i64,
-    /// 数据来源文件，便于回溯
+    /// 数据来源文件，便于回溯；手工写入的数据为 null
+    #[schema(example = "2026.json")]
     pub source_file: Option<String>,
 }
 
 /// 与日期关联的节日信息。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
 pub struct Festival {
+    /// 节日英文名
+    #[schema(example = "National Day")]
     pub name_en: String,
+    /// 节日中文名
+    #[schema(example = "国庆节")]
     pub name_zh: String,
+    /// 该节日的法定节假日天数（如国庆 3 天、春节 4 天），不是放假总天数
+    #[schema(example = 3)]
     pub statutory_days: i64,
 }
 
 /// 日期归类，给调用方一个可以直接判断的枚举。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum DayType {
     /// 法定放假日
     Holiday,
-    /// 调休上班日
+    /// 调休上班日（多为周末补班）
     MakeupWorkday,
     /// 普通周末
     Weekend,
@@ -140,25 +155,48 @@ pub enum DayType {
 }
 
 /// 单个日期的查询结果。
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct DayQuery {
+    /// 规范化后的日期，`YYYY-MM-DD`
+    #[schema(example = "2026-10-01")]
     pub date: String,
+    /// 年
+    #[schema(example = 2026)]
     pub year: i32,
+    /// 月，1-12
+    #[schema(example = 10)]
     pub month: u32,
+    /// 日，1-31
+    #[schema(example = 1)]
     pub day: u32,
-    /// 1 = 周一 ... 7 = 周日
+    /// 星期，1 = 周一 … 7 = 周日
+    #[schema(example = 4)]
     pub day_of_week: u32,
+    /// 星期的中文写法
+    #[schema(value_type = String, example = "周四")]
     pub day_of_week_cn: &'static str,
+    /// 是否周六或周日（只看日历，不考虑调休）
+    #[schema(example = false)]
     pub is_weekend: bool,
-    /// 数据库中是否存在该年份的数据。为 false 表示「无数据」，而不是「不是节假日」
+    /// 数据库中是否存在该年份的数据。
+    /// `false` 表示「这一年没有数据」，而不是「这一天不是节假日」——不要据此判定为工作日
+    #[schema(example = true)]
     pub data_available: bool,
+    /// 日期归类，四态之一；判断「是不是节假日」优先看这个字段
     pub day_type: DayType,
+    /// 是否在放假日清单里
+    #[schema(example = true)]
     pub is_holiday: bool,
+    /// 是否需要调休上班（放假通知里被指定为上班的周末）
+    #[schema(example = false)]
     pub is_makeup_workday: bool,
+    /// 该放假日是否由调休换来（调休补假日）
+    #[schema(example = false)]
     pub is_in_lieu: bool,
-    /// 实际上不用上班的日子（法定假日，或未被调休的周末）
+    /// 实际上不用上班：法定放假日，或未被调休占用的周末
+    #[schema(example = true)]
     pub is_rest_day: bool,
-    /// 命中记录时填充，否则为 null
+    /// 命中的节日信息；该日没有对应记录时为 null
     pub festival: Option<Festival>,
 }
 
